@@ -43,6 +43,8 @@ dist-ssr/
 # Data
 data/quality_metrics.db
 data/processed/
+backend/data/
+*.db
 *.db-journal
 
 # Environment

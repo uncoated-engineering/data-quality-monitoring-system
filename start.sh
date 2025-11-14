@@ -11,16 +11,26 @@ else
     echo "Docker not found. Starting services manually..."
     echo ""
 
+    # Check if uv is installed
+    if ! command -v uv &> /dev/null; then
+        echo "Installing uv (fast Python package manager)..."
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        export PATH="$HOME/.cargo/bin:$PATH"
+    fi
+
     # Start backend
     echo "Starting backend server..."
     cd backend
-    if [ ! -d "venv" ]; then
-        echo "Creating virtual environment..."
-        python3 -m venv venv
+
+    if [ ! -d ".venv" ]; then
+        echo "Creating virtual environment with uv..."
+        uv venv
     fi
 
-    source venv/bin/activate
-    pip install -q -r requirements.txt
+    source .venv/bin/activate
+
+    echo "Installing dependencies with uv (this will be fast!)..."
+    uv pip install -r requirements.txt
 
     echo "Backend starting on http://localhost:8000"
     python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 &

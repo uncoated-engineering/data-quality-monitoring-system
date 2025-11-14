@@ -83,15 +83,31 @@ git clone <repository-url>
 cd data-quality-monitoring-system
 ```
 
-2. **Backend Setup**
+2. **Install uv (Recommended - Fast Python Package Manager)**
+```bash
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Or use pip
+pip install uv
+```
+
+3. **Backend Setup**
 ```bash
 cd backend
+
+# Using uv (recommended - much faster!)
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv pip install -r requirements.txt
+
+# Or using traditional pip
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-3. **Frontend Setup**
+4. **Frontend Setup**
 ```bash
 cd frontend
 npm install
@@ -242,6 +258,7 @@ duplicates = dedup_engine.find_duplicates(
 
 ### Backend
 - **FastAPI**: Modern, fast web framework
+- **uv**: Ultra-fast Python package installer (10-100x faster than pip)
 - **Pandas**: Data manipulation and analysis
 - **NumPy**: Numerical computations
 - **FuzzyWuzzy**: Fuzzy string matching
@@ -257,10 +274,18 @@ duplicates = dedup_engine.find_duplicates(
 
 ## Performance Considerations
 
+### Data Quality Engine
 - **Blocking**: Reduces O(n²) comparisons in fuzzy matching
 - **Efficient Algorithms**: Optimized similarity calculations
 - **Incremental Processing**: Suitable for large datasets
 - **Caching**: Metrics stored for historical analysis
+
+### Package Management with uv
+- **10-100x faster** than pip for dependency installation
+- **Disk space efficient**: Shared package cache across environments
+- **Reliable**: Written in Rust with better dependency resolution
+- **Drop-in replacement**: Works with existing requirements.txt and pyproject.toml
+- **Fast virtual environments**: Creates venvs in milliseconds
 
 ## Best Practices
 

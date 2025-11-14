@@ -5,6 +5,8 @@ import QualityScoreCard from '../components/QualityScoreCard';
 import TrendChart from '../components/TrendChart';
 import DimensionScores from '../components/DimensionScores';
 import AlertsList from '../components/AlertsList';
+import DataPreview from '../components/DataPreview';
+import MetricDetails from '../components/MetricDetails';
 
 interface DashboardProps {
   datasetId: string | null;
@@ -187,45 +189,27 @@ function Dashboard({ datasetId }: DashboardProps) {
         </div>
       )}
 
-      {/* Metrics Details */}
+      {/* Data Preview */}
       <div className="card">
-        <h3 className="card-title">Metrics Details</h3>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Dimension</th>
-              <th>Metric</th>
-              <th>Value</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {qualityScore.metrics.map((metric) => (
-              <tr key={metric.metric_id}>
-                <td>
-                  <span className="badge badge-info" style={{ textTransform: 'capitalize' }}>
-                    {metric.dimension}
-                  </span>
-                </td>
-                <td>{metric.name}</td>
-                <td>
-                  {metric.value.toFixed(2)}{metric.unit}
-                </td>
-                <td>
-                  {metric.value >= 90 ? (
-                    <span className="badge badge-success">Excellent</span>
-                  ) : metric.value >= 70 ? (
-                    <span className="badge badge-info">Good</span>
-                  ) : metric.value >= 50 ? (
-                    <span className="badge badge-warning">Fair</span>
-                  ) : (
-                    <span className="badge badge-danger">Poor</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <h3 className="card-title">Data Preview</h3>
+        <DataPreview datasetId={datasetId} />
+      </div>
+
+      {/* Metrics Details with Drill-Down */}
+      <div className="card">
+        <h3 className="card-title">Quality Metrics - Click to See Problematic Records</h3>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1rem' }}>
+          Click on metrics with issues to see which records are causing quality problems
+        </p>
+        <div>
+          {qualityScore.metrics.map((metric) => (
+            <MetricDetails
+              key={metric.metric_id}
+              metric={metric}
+              datasetId={datasetId}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

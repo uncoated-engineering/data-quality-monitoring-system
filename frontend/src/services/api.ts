@@ -35,6 +35,24 @@ export const datasetAPI = {
     const response = await api.get(`/api/datasets/${datasetId}`);
     return response.data;
   },
+
+  getSample: async (datasetId: string, limit: number = 10, offset: number = 0): Promise<any> => {
+    const response = await api.get(`/api/datasets/${datasetId}/sample`, {
+      params: { limit, offset },
+    });
+    return response.data;
+  },
+
+  getProblematicRecords: async (
+    datasetId: string,
+    metricType: 'duplicates' | 'missing' | 'outliers',
+    column?: string
+  ): Promise<any> => {
+    const response = await api.get(`/api/datasets/${datasetId}/problematic`, {
+      params: { metric_type: metricType, column },
+    });
+    return response.data;
+  },
 };
 
 export const qualityAPI = {

@@ -10,6 +10,7 @@ from fastapi import FastAPI, File, UploadFile, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import pandas as pd
+import numpy as np
 
 from app.models.data_quality import (
     QualityScore, QualityRule, Alert, AlertSeverity,
@@ -176,6 +177,99 @@ async def get_dataset_info(dataset_id: str):
         "column_names": df.columns.tolist(),
         "dtypes": {col: str(dtype) for col, dtype in df.dtypes.items()},
         "sample_data": df.head(5).to_dict('records')
+    }
+
+
+@app.get("/api/datasets/{dataset_id}/sample")
+async def get_dataset_sample(
+    dataset_id: str,
+    limit: int = Query(10, ge=1, le=100),
+    offset: int = Query(0, ge=0)
+):
+    """Get sample data from a dataset with pagination"""
+    if dataset_id not in datasets:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+
+    ds = datasets[dataset_id]
+    df = ds["dataframe"]
+
+    # Get sample with pagination
+    sample = df.iloc[offset:offset+limit]
+
+    return {
+        "dataset_id": dataset_id,
+        "total_rows": len(df),
+        "offset": offset,
+        "limit": limit,
+        "columns": df.columns.tolist(),
+        "dtypes": {col: str(dtype) for col, dtype in df.dtypes.items()},
+        "data": sample.to_dict('records')
+    }
+
+
+@app.get("/api/datasets/{dataset_id}/problematic")
+async def get_problematic_records(
+    dataset_id: str,
+    metric_type: str = Query(..., description="Type of issue: duplicates, missing, outliers"),
+    column: Optional[str] = None
+):
+    """Get problematic records for a specific metric"""
+    if dataset_id not in datasets:
+        raise HTTPException(status_code=404, detail="Dataset not found")
+
+    ds = datasets[dataset_id]
+    df = ds["dataframe"]
+
+    problematic_records = []
+    explanation = ""
+
+    if metric_type == "duplicates":
+        # Find duplicate rows
+        if column:
+            duplicated_mask = df.duplicated(subset=[column], keep=False)
+        else:
+            duplicated_mask = df.duplicated(keep=False)
+
+        problematic_df = df[duplicated_mask]
+        problematic_records = problematic_df.replace({np.nan: None}).to_dict('records')
+        explanation = f"Found {len(problematic_df)} duplicate records"
+
+        if column:
+            explanation += f" in column '{column}'"
+
+    elif metric_type == "missing":
+        # Find rows with missing values
+        if column:
+            missing_mask = df[column].isnull()
+            problematic_df = df[missing_mask]
+            explanation = f"Found {len(problematic_df)} records with missing values in '{column}'"
+        else:
+            missing_mask = df.isnull().any(axis=1)
+            problematic_df = df[missing_mask]
+            explanation = f"Found {len(problematic_df)} records with missing values"
+
+        problematic_records = problematic_df.replace({np.nan: None}).to_dict('records')
+
+    elif metric_type == "outliers":
+        # Find outliers using IQR method
+        if column and column in df.select_dtypes(include=[np.number]).columns:
+            Q1 = df[column].quantile(0.25)
+            Q3 = df[column].quantile(0.75)
+            IQR = Q3 - Q1
+            outlier_mask = (df[column] < (Q1 - 1.5 * IQR)) | (df[column] > (Q3 + 1.5 * IQR))
+            problematic_df = df[outlier_mask]
+            problematic_records = problematic_df.replace({np.nan: None}).to_dict('records')
+            explanation = f"Found {len(problematic_df)} outlier records in '{column}'"
+        else:
+            explanation = "No numeric column specified for outlier detection"
+
+    return {
+        "dataset_id": dataset_id,
+        "metric_type": metric_type,
+        "column": column,
+        "count": len(problematic_records),
+        "explanation": explanation,
+        "records": problematic_records[:100]  # Limit to 100 records
     }
 
 
